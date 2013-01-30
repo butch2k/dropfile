@@ -1,89 +1,106 @@
-﻿<!DOCTYPE html>
+<!doctype html>
 <html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+		<script src="dropfile.js"></script>
+		<style>
+		* { font-size: 100%; margin: 0; }
+		html { background: #F9F9F9; color: #222; font-family: sans-serif; }
+		body { margin: 3em; }
+		h1 { font-size: 2em; margin-bottom: 1em; }
+		p { margin-bottom: 1em; }
+		#console { float: left; width: 45%; overflow-x: auto; }
+		#preview { float: right; width: 45%; overflow-x: auto; }
+		audio, iframe, img, video { display: block; margin-bottom: 2em; max-width: 100%; }
+		</style>
+		<title>Drag &amp; Drop</title>
+	</head>
+	<body>
+		<h1>Drag and drop file demo</h1>
+		<p>Dropfile.js is an <a href="http://www.w3.org/TR/FileAPI/">HTML5 FileAPI</a> polyfill for Internet Explorer 8 and 9 which allows desktop to web <em>drag and drop</em>.</p>
+		<p>Go ahead and <strong>drag</strong> one or more files from your <strong>desktop</strong> into this <strong>browser</strong> to see the effect.</p>
+		<pre id="console"></pre>
+		<pre id="preview"></pre>
+		<script>
+		(function () {
+			// handling w3c/ie events
+			var hasListener = "addEventListener" in window, addEventListener = hasListener ? "addEventListener" : "attachEvent", on = hasListener ? "" : "on";
 
-<head>
-    <link rel="stylesheet" href="/_packages/document.css"/>
-    <script src="/_packages/document.js"></script>
-    <title>dropfile.js - Drop Files into Browser</title>
-<style>
+			// places we'll add stuff to
+			var DOM = {
+				console: document.querySelector("#console"),
+				preview: document.querySelector("#preview")
+			};
 
-    #holder{
-        border:1px solid lightgray;
-        height:100px;
-        font-size:20px;
-        color:gray;
-        text-align:center;
-        padding:20px;
-    }
-    #holder:hover{
-        background-color:lightgray;
-    }
-	    #holder ul{
-	    	width:100%;
-	    	text-align:left;
-	    }
-		    #holder li img{
-		    	height:20px;
-		    }
+			// the required cancelling of the dragover event
+			document.documentElement[addEventListener](on+"dragover", function (event) {
+				event.preventDefault ? event.preventDefault() : event.returnValue = false;
+			});
 
-</style>
-</head>
-<body>
+			// ah, the magical drop event
+			document.documentElement[addEventListener](on+"drop", function (event) {
+				// cancel the default action
+				event.preventDefault ? event.preventDefault() : event.returnValue = false;
 
-<h1>Drag and drop file demo</h1>
+				// wipe the preview clean
+				while (DOM.preview.lastChild) DOM.preview.removeChild(DOM.preview.lastChild);
 
+				// show us stats
+				DOM.console.innerHTML = "<b>Drop on</b>: "+event.srcElement.nodeName+"<br>";
 
-<div id="holder">
-    Drop files from desktop here
-</div >
-    
-<h2>Source</h2>
-<p>Include our drop file fix for IE8,9</p>
-<script src="dropfile.js" class="pre"></script>
+				// and give us data
+				var dataTransfer = event.MsDataTransfer || event.dataTransfer;
 
-<p>Add event listeners to the area where we want to drop files</p>
-<script>
-	if( !window.dropfile ){
-		document.getElementById("holder").innerHTML = "Ouch this browser doesn't support FileReader or the shim. " + (!Silverlight.isInstalled()?"<br/><b>Please install Silverlight</b>":"");
-	}
-</script>
+				if (dataTransfer && dataTransfer.files) {
+					DOM.console.innerHTML += "<b>Dropped files</b>: "+dataTransfer.files.length+"<br><br>";
 
-<script class="pre">
-var holder = document.getElementById('holder');
-holder.ondragover = function () { return false; };
-holder.ondragenter = function () { return false; };
-holder.ondrop = function (e) {
+					// loop through the files we've dropped
+					for (var index = 0, length = dataTransfer.files.length; index < length; ++index) {
+						(function (file, index) {
+							DOM.console.innerHTML += "<b>File "+index+" name</b>: "+file.name+"<br>";
+							DOM.console.innerHTML += "<b>File "+index+" type</b>: "+file.type+"<br>";
+							DOM.console.innerHTML += "<b>File "+index+" size</b>: "+file.size+"<br><br>";
 
-    // ensure that we listen out for the window event
-    e = e || window.event;
+							var reader = new FileReader();
 
-    // And that for the fix to work we accept `e.files`
-    var files = (e.files || e.dataTransfer.files);
+							// do fun stuff to preview files based on their mime type
+							reader.onload = function (event) {
+								var element = document.createElement("pre");
 
-    var s = "";
-    for (var i = 0; i < files.length; i++) {
-        (function (i) {
-            var reader = new FileReader();
-            reader.onload = function (event) {
-                holder.innerHTML = "<li><img src='" + event.target.result + "' /> " + (files[i].name) + "</li>" + holder.innerHTML;
-            };
-            reader.readAsDataURL(files[i]);
-        })(i);
-    }
+								if (/audio/.test(file.type)) {
+									element = document.createElement("audio");
+									element.autoplay = true;
+									element.controls = true;
+									element.src = reader.result;
+								}
 
-    return false;
-};
-</script>
+								if (/image/.test(file.type)) {
+									element = document.createElement("img");
+									element.src = reader.result;
+								}
 
+								if (/^(text|application\/(javascript|json|xml))/.test(file.type)) {
+									element.innerHTML = atob(reader.result.split(',')[1]).replace(/</g, "&lt;").replace(/\n/g, "<br>");
+								}
 
-<p>Because in IE8 we can't get the appropriate position of the mouse because of the Margin on the body. Lets make the margin 0</p>
-<script class="pre">
-// demo fix for IE8
-if(window.getComputedStyle(document.body, "").getPropertyValue('marginLeft')==="auto"){
-    document.body.style.width = "100%";
-    document.body.style.maxWidth = "100%";
-    document.body.style.margin = "0px";
-}
-</script>
-</body>
+								if (/video/.test(file.type)) {
+									element = document.createElement("video");
+									element.autoplay = true;
+									element.controls = true;
+									element.src = reader.result;
+								}
+
+								DOM.preview.appendChild(element);
+							};
+
+							reader.readAsDataURL(file);
+						})(dataTransfer.files[index], index+1);
+					}
+				}
+			});
+		})();
+		</script>
+	</body>
 </html>
