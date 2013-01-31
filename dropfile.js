@@ -67,11 +67,9 @@
 	} */
 
 	function FileList(files) {
-		for (var length = files.length, index = 0; index < length; ++index) {
-			files[index] = new File(files[index].split(","));
+		for (var length = this.length = files.length, index = 0; index < length; ++index) {
+			this[index] = new File(files[index].split(","));
 		}
-
-		Array.prototype.push.apply(this, files);
 	}
 
 	FileList.prototype.item = function(index) {
@@ -187,10 +185,12 @@
 	object = object.firstChild;
 
 	// style silverlight object
-	object.style.cssText = "display:none;height:1px;position:absolute;width:1px";
+	object.style.cssText = "display:block;height:1px;left:0;*margin:-2px;position:absolute;width:1px;top:0;z-index:9999999";
 
 	// append silverlight object
-	documentElement.appendChild(object);
+	setTimeout(function () {
+		document.body && document.body.appendChild(object) || setTimeout(arguments.callee);
+	});
 
 	// add drag events
 	documentElement[addEventListener](on+"dragover",  onDrag);

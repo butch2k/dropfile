@@ -30,8 +30,8 @@
 
 			// places we'll add stuff to
 			var DOM = {
-				console: document.querySelector("#console"),
-				preview: document.querySelector("#preview")
+				console: document.getElementById("console"),
+				preview: document.getElementById("preview")
 			};
 
 			// the required cancelling of the dragover event
@@ -78,6 +78,11 @@
 
 								if (/image/.test(file.type)) {
 									element = document.createElement("img");
+
+									element.onerror = function () {
+										element.src = "noimage.png";
+									};
+
 									element.src = reader.result;
 								}
 
